@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FunderPro Ads Builder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: #F4F4F4; color: #1A1A1A; font-family: "Inter", sans-serif; -webkit-font-smoothing: antialiased; overflow: hidden; }
+    #app { display: flex; height: 100vh; }
+
+    /* ── Layout columns ── */
+    #sidebar-left  { width: 196px; background: #fff; border-right: 1px solid #E0E0E0; overflow-y: auto; padding: 0; flex-shrink: 0; display: flex; flex-direction: column; }
+    #canvas-area   { flex: 1; display: flex; flex-direction: column; align-items: center; overflow-y: auto; padding: 28px 24px; background: #F4F4F4; }
+    #sidebar-right { width: 272px; background: #fff; border-left: 1px solid #E0E0E0; overflow-y: auto; flex-shrink: 0; display: flex; flex-direction: column; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: #D0D0D0; border-radius: 3px; }
+
+    /* ── App header (inside left sidebar) ── */
+    #app-header { padding: 14px 12px 12px; border-bottom: 2px solid #FF3333; display: flex; align-items: center; gap: 8px; flex-shrink: 0; background: #1A1A1A; }
+    #app-logo { width: 30px; height: 30px; background: #FF3333; border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    #app-logo svg { width: 17px; height: 17px; }
+    #app-title { font-size: 13px; font-weight: 800; color: #fff; line-height: 1; letter-spacing: 0.03em; }
+    #app-badge { font-size: 8px; background: #FF3333; color: #fff; border-radius: 3px; padding: 2px 5px; font-weight: 700; letter-spacing: 0.05em; margin-top: 2px; }
+
+    /* ── Format sidebar ── */
+    .format-group-label { padding: 12px 12px 5px; font-size: 9px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 0.08em; background: #fafafa; border-bottom: 1px solid #eee; }
+    .format-spacer { height: 6px; }
+    .format-item { padding: 7px 12px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; border-left: 3px solid transparent; transition: background 0.1s; }
+    .format-item:hover { background: #FFF0F0; }
+    .format-item.active { background: #FFF0F0; border-left-color: #FF3333; }
+    .format-item strong { display: block; font-size: 11px; font-weight: 600; color: #1A1A1A; line-height: 1.3; }
+    .format-item.active strong { color: #FF3333; }
+    .format-item span { font-size: 9px; color: #999; }
+    .fi-text { display: flex; flex-direction: column; }
+    .fi-dot { width: 5px; height: 5px; border-radius: 50%; background: #FF3333; flex-shrink: 0; }
+
+    /* ── Canvas area ── */
+    #canvas-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; width: 100%; }
+    #canvas-info { font-size: 11px; color: #999; font-weight: 600; flex: 1; }
+    #banner-wrapper { display: flex; justify-content: flex-start; }
+    .mode-btn { padding: 5px 12px; border-radius: 5px; border: 1px solid #E0E0E0; background: #fff; color: #666; font-size: 11px; font-weight: 700; cursor: pointer; }
+    .mode-btn.active { background: #FF3333; color: #fff; border-color: #FF3333; }
+    #replay-btn { display: none; padding: 5px 12px; border-radius: 5px; border: 1px solid #E0E0E0; background: #fff; color: #666; font-size: 11px; font-weight: 700; cursor: pointer; }
+    #replay-btn:hover { background: #f4f4f4; }
+
+    /* ── Export bar (top of right sidebar) ── */
+    #export-bar { padding: 10px 12px; border-bottom: 1px solid #E0E0E0; display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; background: #FAFAFA; }
+    #export-bar-row { display: flex; gap: 6px; }
+    .btn-export { flex: 1; padding: 7px 8px; border-radius: 5px; border: none; font-size: 11px; font-weight: 700; cursor: pointer; }
+    #btn-png       { background: #FF3333; color: #fff; }
+    #btn-html5     { background: #1A1A1A; color: #fff; }
+    #btn-export-all{ background: #1A1A1A; color: #fff; width: 100%; }
+    .btn-toolbar   { padding: 5px 10px; border-radius: 5px; border: 1px solid #E0E0E0; background: #fff; color: #555; font-size: 11px; font-weight: 600; cursor: pointer; }
+    .btn-toolbar:hover { background: #f4f4f4; }
+
+    /* Market selector in export bar */
+    #market-row { display: flex; align-items: center; gap: 6px; }
+    #market-row label { font-size: 10px; color: #999; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
+    #market-select { flex: 1; font-size: 11px; padding: 5px 7px; border-radius: 5px; border: 1px solid #E0E0E0; background: #fff; color: #1A1A1A; outline: none; }
+
+    /* ── Tabs ── */
+    #tabs-bar { display: flex; border-bottom: 1px solid #E0E0E0; flex-shrink: 0; }
+    .tab-btn { flex: 1; padding: 9px 4px; font-size: 9px; font-weight: 700; background: transparent; border: none; cursor: pointer; text-transform: uppercase; letter-spacing: 0.06em; color: #aaa; border-bottom: 2px solid transparent; transition: color 0.15s; }
+    .tab-btn:hover { color: #555; }
+    .tab-btn.active { color: #FF3333; border-bottom-color: #FF3333; }
+    #panel-content { flex: 1; overflow-y: auto; padding: 14px 12px; }
+
+    /* ── Controls ── */
+    .ctrl-section { margin-bottom: 18px; }
+    .ctrl-section-title { font-size: 10px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee; }
+    .ctrl-label { font-size: 10px; color: #999; font-weight: 600; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .ctrl-input { width: 100%; background: #F4F4F4; border: 1px solid #E0E0E0; border-radius: 5px; color: #1A1A1A; padding: 6px 9px; font-size: 12px; font-family: "Inter", sans-serif; outline: none; }
+    .ctrl-input:focus { border-color: #FF3333; }
+    select.ctrl-input { cursor: pointer; }
+    .ctrl-row { display: flex; gap: 8px; margin-bottom: 8px; }
+    .ctrl-col { flex: 1; min-width: 0; }
+    .ctrl-color-wrap { display: flex; align-items: center; gap: 6px; }
+    .ctrl-color-wrap input[type="color"] { width: 30px; height: 26px; border-radius: 4px; border: 1px solid #E0E0E0; background: none; cursor: pointer; padding: 2px; }
+    .ctrl-color-wrap span { font-size: 11px; color: #888; }
+    .upload-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .btn-upload { padding: 6px 12px; background: #1A1A1A; color: #fff; border: none; border-radius: 5px; font-size: 11px; font-weight: 700; cursor: pointer; }
+    .btn-upload:hover { background: #333; }
+    .upload-ok { font-size: 11px; color: #FF3333; font-weight: 600; }
+    .btn-clear { width: 100%; padding: 6px 10px; background: #FFF0F0; color: #CC0000; border: 1px solid #FFD0D0; border-radius: 5px; font-size: 11px; font-weight: 700; cursor: pointer; margin-top: 6px; }
+    .btn-clear:hover { background: #FFE0E0; }
+    .copy-sugg { font-size: 11px; color: #888; background: #F4F4F4; border: 1px solid #E0E0E0; border-radius: 4px; padding: 4px 8px; cursor: pointer; margin-bottom: 4px; }
+    .copy-sugg:hover { background: #FFF0F0; color: #FF3333; }
+
+    /* ── Modals ── */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 200; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal-box { background: #fff; border-radius: 10px; padding: 22px; max-width: 90vw; max-height: 86vh; overflow: auto; min-width: 340px; }
+    .modal-title { font-size: 15px; font-weight: 700; color: #FF3333; margin-bottom: 14px; }
+    .modal-actions { display: flex; gap: 8px; margin-top: 16px; }
+    .btn-modal-primary { flex: 1; padding: 9px; background: #FF3333; color: #fff; border: none; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .btn-modal-cancel  { flex: 1; padding: 9px; background: #F4F4F4; color: #555; border: none; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .btn-modal-close   { padding: 5px 12px; background: #F4F4F4; color: #555; border: none; border-radius: 5px; font-size: 12px; font-weight: 700; cursor: pointer; }
+
+    /* Bulk modal */
+    #bulk-rows { display: flex; flex-direction: column; gap: 8px; max-height: 50vh; overflow-y: auto; }
+    .bulk-row { display: flex; align-items: center; gap: 10px; padding: 8px; background: #F9F9F9; border-radius: 6px; border: 1px solid #eee; }
+    .bulk-thumb { width: 52px; height: 36px; object-fit: cover; border-radius: 3px; border: 1px solid #E0E0E0; flex-shrink: 0; }
+    .bulk-filename { flex: 1; font-size: 11px; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bulk-select { font-size: 11px; padding: 5px 7px; border-radius: 4px; border: 1px solid #E0E0E0; background: #fff; color: #1A1A1A; width: 170px; outline: none; }
+
+    /* Preview All modal */
+    #preview-modal-overlay .modal-box { min-width: 60vw; }
+    .preview-group-label { font-size: 9px; color: #999; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin: 14px 0 8px; }
+    .preview-grid-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; margin-bottom: 10px; }
+    .preview-item { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; }
+    .preview-item:hover > div { outline: 2px solid #FF3333; }
+    .preview-item-info { text-align: center; }
+    .preview-item-info strong { display: block; font-size: 9px; color: #555; }
+    .preview-item-info span  { font-size: 8px; color: #aaa; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Left: format sidebar -->
+  <div id="sidebar-left">
+    <div id="app-header">
+      <div id="app-logo">
+        <svg viewBox="0 0 18 18" fill="none">
+          <path d="M3 3h8c3 0 5.5 2.5 5.5 5.5S14 14 11 14H6v4H3V3zm3 8h5c1.4 0 2.5-1.1 2.5-2.5S12.4 6 11 6H6v5z" fill="white"/>
+          <rect x="6" y="14" width="3" height="3" fill="white"/>
+        </svg>
+      </div>
+      <div>
+        <div id="app-title">FunderPro</div>
+        <div id="app-badge">ADS BUILDER</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Centre: canvas -->
+  <div id="canvas-area">
+    <div id="canvas-toolbar">
+      <span id="canvas-info">Loading…</span>
+      <button class="mode-btn active" data-mode="static">📷 Static</button>
+      <button class="mode-btn"        data-mode="animated">🎬 Animated</button>
+      <button id="replay-btn">▶ Replay</button>
+      <button class="btn-toolbar" id="btn-preview-all">Preview All</button>
+      <button class="btn-toolbar" id="btn-reset">↺ Reset</button>
+    </div>
+    <div id="banner-wrapper"></div>
+  </div>
+
+  <!-- Right: controls -->
+  <div id="sidebar-right">
+    <div id="export-bar">
+      <div id="market-row">
+        <label>Market</label>
+        <select id="market-select"></select>
+      </div>
+      <div id="export-bar-row">
+        <button class="btn-export" id="btn-png">↓ PNG</button>
+        <button class="btn-export" id="btn-html5">↓ HTML5</button>
+      </div>
+      <button class="btn-export" id="btn-export-all">↓ Export All Formats → ZIP</button>
+      <button class="btn-toolbar" id="btn-bulk-upload" style="width:100%;text-align:center">⬆ Bulk Upload BGs</button>
+    </div>
+    <div id="tabs-bar"></div>
+    <div id="panel-content"></div>
+  </div>
+
+</div>
+
+<!-- Preview All Modal -->
+<div class="modal-overlay" id="preview-modal-overlay">
+  <div class="modal-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="modal-title">Preview All Formats</div>
+      <button class="btn-modal-close" id="btn-preview-close">✕ Close</button>
+    </div>
+    <div id="preview-all-grid"></div>
+  </div>
+</div>
+
+<!-- Bulk Upload Modal -->
+<div class="modal-overlay" id="bulk-modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title">Bulk Upload — Assign Images to Formats</div>
+    <div id="bulk-rows"></div>
+    <div class="modal-actions">
+      <button class="btn-modal-primary" id="bulk-apply">Apply Assignments</button>
+      <button class="btn-modal-cancel"  id="bulk-cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="../src/main.js"></script>
+</body>
+</html>
