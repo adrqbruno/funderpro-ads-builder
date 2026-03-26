@@ -1,4 +1,4 @@
-import { FONTS, ANIMS, ANIM_LABELS, COPY, BRAND } from "./constants.js";
+import { FONTS, ANIMS, ANIM_LABELS, COPY } from "./constants.js";
 import { state } from "./state.js";
 import { renderPreview } from "./preview.js";
 
@@ -26,7 +26,6 @@ function row(...cols) {
   return r;
 }
 
-// ── Input primitives ──────────────────────────────────────────────────────────
 function numInput(label, value, onChange) {
   const w = el("div", { style: "margin-bottom:10px" });
   w.appendChild(lbl(label));
@@ -52,7 +51,7 @@ function selectField(label, value, options, onChange, optLabels = null) {
   const w = el("div", { style: "margin-bottom:10px" });
   w.appendChild(lbl(label));
   const s = el("select", { class: "ctrl-input" });
-  options.forEach((o, idx) => {
+  options.forEach(o => {
     const opt = el("option", { value: o }, optLabels ? optLabels[o] || o : o);
     if (o === value) opt.selected = true;
     s.appendChild(opt);
@@ -133,7 +132,6 @@ function clearBtn(label, onClick) {
   return btn;
 }
 
-// ── State updater ─────────────────────────────────────────────────────────────
 function upd(layer, key, val) {
   state.layers[layer][key] = val;
   renderPreview(state.mode === "animated");
@@ -174,19 +172,25 @@ function panelLogo() {
 
   f.appendChild(section("Logo",
     imageUpload("Logo file (global — all formats)", l.logo.src, v => {
-      // apply globally
-      upd("logo", "src", v);
+      // 1. store globally so unvisited formats pick it up on load
+      window.__globalLogo = v;
+      // 2. apply to all already-saved formats
       if (window.__savedLayers) {
         Object.values(window.__savedLayers).forEach(sl => { if (sl) sl.logo.src = v; });
       }
+      // 3. apply to current format live
+      upd("logo", "src", v);
     }),
     ...(l.logo.src ? [
       slider("Opacity", l.logo.opacity, 0, 100, v => upd("logo", "opacity", v)),
       row(numInput("X (px)", l.logo.x, v => upd("logo", "x", v)), numInput("Y (px)", l.logo.y, v => upd("logo", "y", v))),
       row(numInput("W (px)", l.logo.w, v => upd("logo", "w", v)), numInput("H (px)", l.logo.h, v => upd("logo", "h", v))),
       clearBtn("Remove logo (all formats)", () => {
+        window.__globalLogo = "";
+        if (window.__savedLayers) {
+          Object.values(window.__savedLayers).forEach(sl => { if (sl) sl.logo.src = ""; });
+        }
         upd("logo", "src", "");
-        if (window.__savedLayers) Object.values(window.__savedLayers).forEach(sl => { if (sl) sl.logo.src = ""; });
       }),
     ] : [])
   ));
