@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/builder", "destination": "/builder/index.html" },
+    { "source": "/builder/(.*)", "destination": "/builder/$1" },
+    { "source": "/src/(.*)", "destination": "/src/$1" }
+  ]
+}
