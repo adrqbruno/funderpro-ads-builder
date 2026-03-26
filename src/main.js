@@ -7,6 +7,7 @@ import { exportPNG, exportHTML5, exportAll } from "./export.js";
 // ── Per-format memory ─────────────────────────────────────────────────────────
 const savedLayers  = {};
 window.__savedLayers = savedLayers;   // exposed so controls.js can write to it
+window.__globalLogo  = "";            // global logo src, applied to unvisited formats
 export const formatImages = {};
 
 function saveCurrent() {
@@ -16,11 +17,15 @@ function saveCurrent() {
 function loadFormat(fmt) {
   saveCurrent();
   state.fmt = fmt;
+
   if (savedLayers[fmt.label]) {
+    // Format already visited — restore saved state
     state.layers = JSON.parse(JSON.stringify(savedLayers[fmt.label]));
   } else {
+    // First visit — apply defaults + any global overrides
     state.layers = DEFAULT_LAYERS(fmt);
-    if (formatImages[fmt.label]) state.layers.image.src = formatImages[fmt.label];
+    if (formatImages[fmt.label])  state.layers.image.src = formatImages[fmt.label];
+    if (window.__globalLogo)      state.layers.logo.src  = window.__globalLogo;
   }
 }
 
@@ -41,14 +46,12 @@ function buildFormatSidebar() {
       const item = document.createElement("div");
       item.className = "format-item" + (fmt.label === state.fmt.label ? " active" : "");
       item.dataset.label = fmt.label;
-
-      const saved = !!savedLayers[fmt.label];
       item.innerHTML = `
         <span class="fi-text">
           <strong>${fmt.label}</strong>
           <span>${fmt.w}×${fmt.h}</span>
         </span>
-        <span class="fi-dot" style="display:${saved ? "block" : "none"}"></span>
+        <span class="fi-dot" style="display:${savedLayers[fmt.label] ? "block" : "none"}"></span>
       `;
       item.onclick = () => {
         loadFormat(fmt);
@@ -239,7 +242,6 @@ function openPreviewAll() {
 
       const wrap = document.createElement("div");
       wrap.className = "preview-item";
-      wrap.title = `Click to edit ${fmt.label}`;
       wrap.onclick = () => {
         loadFormat(fmt);
         document.querySelectorAll(".format-item").forEach(el => el.classList.remove("active"));
@@ -248,7 +250,6 @@ function openPreviewAll() {
         refresh();
       };
 
-      // Mini banner
       const clip = document.createElement("div");
       clip.style.cssText = `width:${W}px;height:${H}px;overflow:hidden;border-radius:3px;box-shadow:0 2px 8px rgba(0,0,0,.25);background:${layers.bg.color};position:relative;flex-shrink:0;`;
 
@@ -258,7 +259,7 @@ function openPreviewAll() {
         img.style.cssText = `position:absolute;left:${layers.image.x}%;top:${layers.image.y}%;width:${layers.image.w}%;height:${layers.image.h}%;object-fit:cover;opacity:${layers.image.opacity/100};`;
         clip.appendChild(img);
       }
-      if (!fmt.h <= 100) {
+      if (fmt.h > 100) {
         const hl = document.createElement("div");
         hl.textContent = layers.headline.text;
         hl.style.cssText = `position:absolute;left:${layers.headline.x}%;top:${layers.headline.y}%;transform:translate(-50%,-50%);text-align:center;width:85%;color:${layers.headline.color};font-size:${layers.headline.size*sc}px;font-weight:700;line-height:1.2;word-wrap:break-word;`;
@@ -293,6 +294,8 @@ function initExportBar() {
   document.getElementById("btn-preview-all").onclick= openPreviewAll;
   document.getElementById("btn-reset").onclick      = () => {
     state.layers = DEFAULT_LAYERS(state.fmt);
+    // reapply global logo if set
+    if (window.__globalLogo) state.layers.logo.src = window.__globalLogo;
     delete savedLayers[state.fmt.label];
     refresh();
     updateDots();
